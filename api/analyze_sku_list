@@ -1,8 +1,5 @@
 // analyze_sku_list.js
 
-import { promises as fs } from 'fs';
-import path from 'path';
-
 export const config = {
   runtime: 'edge',
 };
@@ -23,10 +20,15 @@ export default async function handler(req) {
       });
     }
 
-    const csvPath = path.join(process.cwd(), 'VF_API_TestProject042925.csv');
-    const data = await fs.readFile(csvPath, 'utf8');
+    const CSV_URL = 'https://raw.githubusercontent.com/ElliottIan397/voiceflow2/main/VF_API_TestProject042925.csv';
+    
+    const response = await fetch(CSV_URL);
+    if (!response.ok) {
+      throw new Error('Failed to fetch CSV from GitHub');
+    }
 
-    const lines = data.trim().split('\n').slice(1); // Skip header
+    const csvText = await response.text();
+    const lines = csvText.trim().split('\n').slice(1); // Skip header
     const skuData = lines.map(line => {
       const [sku, class_code] = line.split(',');
       return { sku: sku.trim(), class_code: class_code.trim() };
