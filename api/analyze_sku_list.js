@@ -1,7 +1,9 @@
 import fetch from 'node-fetch';
 import { parse } from 'csv-parse/sync';
 
-module.exports = async function (req, res) {
+const CSV_URL = 'https://raw.githubusercontent.com/ElliottIan397/voiceflow2/main/VF_API_TestProject042925.csv';
+
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,13 +15,7 @@ module.exports = async function (req, res) {
       return res.status(400).json({ error: 'Invalid input format. Expected sku_list array.' });
     }
 
-    const CSV_URL = 'https://raw.githubusercontent.com/ElliottIan397/voiceflow2/main/VF_API_TestProject042925.csv';
-
     const response = await fetch(CSV_URL);
-    if (!response.ok) {
-      throw new Error('Failed to fetch CSV from GitHub');
-    }
-
     const csvText = await response.text();
 
     const records = parse(csvText, {
@@ -31,7 +27,7 @@ module.exports = async function (req, res) {
     const yield_types = new Set();
 
     sku_list.forEach(inputSku => {
-      const match = records.find(row => row.sku.trim() === inputSku);
+      const match = records.find(row => row.sku?.trim() === inputSku);
       if (match) {
         const classCode = match.class_code.trim();
         if (classCode === 'MICR') {
@@ -48,8 +44,8 @@ module.exports = async function (req, res) {
       yield_types: Array.from(yield_types),
     });
 
-  } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+  } catch (err) {
+    console.error('API Error:', err);
+    return res.status(500).json({ error: 'Failed to process SKU list.' });
   }
-};
+}
