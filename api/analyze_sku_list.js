@@ -11,6 +11,8 @@ export default async function handler(req, res) {
   try {
     const { sku_list } = req.body;
 
+    console.log('Incoming sku_list:', sku_list);
+
     if (!Array.isArray(sku_list)) {
       return res.status(400).json({ error: 'Invalid input format. Expected sku_list array.' });
     }
@@ -23,19 +25,32 @@ export default async function handler(req, res) {
       skip_empty_lines: true,
     });
 
+    console.log('Parsed CSV rows (first 3):', records.slice(0, 3));
+
     let has_micr = false;
     const yield_types = new Set();
 
     sku_list.forEach(inputSku => {
-      const match = records.find(row => row.sku?.trim() === inputSku);
+      console.log('Checking input SKU:', inputSku);
+
+      const match = records.find(row => {
+        const csvSku = row.sku?.trim();
+        console.log(`Comparing ${inputSku} to ${csvSku}`);
+        return csvSku === inputSku;
+      });
+
       if (match) {
-        const classCode = match.class_code.trim();
+        const classCode = match.class_code?.trim();
+        console.log(`Match found for ${inputSku} - class_code: ${classCode}`);
+
         if (classCode === 'MICR') {
           has_micr = true;
         }
         if (['STD', 'HY', 'XHY'].includes(classCode)) {
           yield_types.add(classCode);
         }
+      } else {
+        console.log(`No match found for ${inputSku}`);
       }
     });
 
