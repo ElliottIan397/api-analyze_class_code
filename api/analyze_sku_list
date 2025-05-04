@@ -1,9 +1,9 @@
 // analyze_sku_list.js
 
-import fetch from 'node-fetch';
-import { parse } from 'csv-parse/sync';
+const fetch = require('node-fetch');
+const { parse } = require('csv-parse/sync');
 
-export default async function handler(req, res) {
+module.exports = async function (req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     const CSV_URL = 'https://raw.githubusercontent.com/ElliottIan397/voiceflow2/main/VF_API_TestProject042925.csv';
-    
+
     const response = await fetch(CSV_URL);
     if (!response.ok) {
       throw new Error('Failed to fetch CSV from GitHub');
@@ -54,4 +54,4 @@ export default async function handler(req, res) {
     console.error('API Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
