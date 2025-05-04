@@ -1,5 +1,5 @@
 {
-  "name": "voiceflow-api",
+  "name": "api-analyze_class_code",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
