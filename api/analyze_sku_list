@@ -1,23 +1,18 @@
 // analyze_sku_list.js
 
-export const config = {
-  runtime: 'edge',
-};
+import fetch from 'node-fetch';
+import { parse } from 'csv-parse/sync';
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { sku_list } = await req.json();
+    const { sku_list } = req.body;
 
     if (!Array.isArray(sku_list)) {
-      return new Response(JSON.stringify({ error: 'Invalid input format' }), {
-        status: 400,
-      });
+      return res.status(400).json({ error: 'Invalid input format. Expected sku_list array.' });
     }
 
     const CSV_URL = 'https://raw.githubusercontent.com/ElliottIan397/voiceflow2/main/VF_API_TestProject042925.csv';
@@ -28,41 +23,35 @@ export default async function handler(req) {
     }
 
     const csvText = await response.text();
-    const lines = csvText.trim().split('\n').slice(1); // Skip header
-    const skuData = lines.map(line => {
-      const [sku, class_code] = line.split(',');
-      return { sku: sku.trim(), class_code: class_code.trim() };
+
+    const records = parse(csvText, {
+      columns: true,
+      skip_empty_lines: true,
     });
 
     let has_micr = false;
     const yield_types = new Set();
 
     sku_list.forEach(inputSku => {
-      const match = skuData.find(row => row.sku === inputSku);
+      const match = records.find(row => row.sku.trim() === inputSku);
       if (match) {
-        if (match.class_code === 'MICR') {
+        const classCode = match.class_code.trim();
+        if (classCode === 'MICR') {
           has_micr = true;
         }
-        if (['STD', 'HY', 'XHY'].includes(match.class_code)) {
-          yield_types.add(match.class_code);
+        if (['STD', 'HY', 'XHY'].includes(classCode)) {
+          yield_types.add(classCode);
         }
       }
     });
 
-    return new Response(
-      JSON.stringify({
-        has_micr,
-        yield_types: Array.from(yield_types),
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return res.status(200).json({
+      has_micr,
+      yield_types: Array.from(yield_types),
+    });
+
   } catch (error) {
     console.error('API Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
