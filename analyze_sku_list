@@ -1,0 +1,66 @@
+// analyze_sku_list.js
+
+import { promises as fs } from 'fs';
+import path from 'path';
+
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req) {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+    });
+  }
+
+  try {
+    const { sku_list } = await req.json();
+
+    if (!Array.isArray(sku_list)) {
+      return new Response(JSON.stringify({ error: 'Invalid input format' }), {
+        status: 400,
+      });
+    }
+
+    const csvPath = path.join(process.cwd(), 'VF_API_TestProject042925.csv');
+    const data = await fs.readFile(csvPath, 'utf8');
+
+    const lines = data.trim().split('\n').slice(1); // Skip header
+    const skuData = lines.map(line => {
+      const [sku, class_code] = line.split(',');
+      return { sku: sku.trim(), class_code: class_code.trim() };
+    });
+
+    let has_micr = false;
+    const yield_types = new Set();
+
+    sku_list.forEach(inputSku => {
+      const match = skuData.find(row => row.sku === inputSku);
+      if (match) {
+        if (match.class_code === 'MICR') {
+          has_micr = true;
+        }
+        if (['STD', 'HY', 'XHY'].includes(match.class_code)) {
+          yield_types.add(match.class_code);
+        }
+      }
+    });
+
+    return new Response(
+      JSON.stringify({
+        has_micr,
+        yield_types: Array.from(yield_types),
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (error) {
+    console.error('API Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+    });
+  }
+}
