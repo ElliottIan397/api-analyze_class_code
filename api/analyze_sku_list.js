@@ -1,5 +1,5 @@
-const fetch = require('node-fetch');
-const { parse } = require('csv-parse/sync');
+import fetch from 'node-fetch';
+import { parse } from 'csv-parse/sync';
 
 module.exports = async function (req, res) {
   if (req.method !== 'POST') {
