@@ -1,5 +1,9 @@
 {
-  "name": "analyze-sku-list-api",
+  "name": "voiceflow-api",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "csv-parse": "^5.5.0",
+    "node-fetch": "^3.3.2"
+  }
 }
