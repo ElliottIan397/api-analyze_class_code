@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       skip_empty_lines: true,
     });
 
-    console.log('Parsed CSV rows (first 3):', records.slice(0, 3));
+    console.log('Parsed CSV rows (sample):', records.slice(0, 3));
 
     let has_micr = false;
     const yield_types = new Set();
@@ -35,20 +35,29 @@ export default async function handler(req, res) {
 
       const match = records.find(row => {
         const csvSku = row.sku?.trim();
-        console.log(`Comparing ${inputSku} to ${csvSku}`);
         return csvSku === inputSku;
       });
 
       if (match) {
-        const classCode = match.class_code?.trim();
+        const classCode = match.class_code?.trim() || '';
         console.log(`Match found for ${inputSku} - class_code: ${classCode}`);
 
-        if (classCode === 'MICR') {
+        // Check for MICR
+        if (classCode.includes('M')) {
           has_micr = true;
         }
-        if (['STD', 'HY', 'XHY'].includes(classCode)) {
-          yield_types.add(classCode);
+
+        // Yield logic
+        const isHY = classCode.includes('HY');
+        const isJumbo = classCode.includes('J');
+
+        if (isHY) yield_types.add('HY');
+        if (isJumbo) yield_types.add('JUMBO');
+
+        if (!isHY && !isJumbo) {
+          yield_types.add('STD');
         }
+
       } else {
         console.log(`No match found for ${inputSku}`);
       }
